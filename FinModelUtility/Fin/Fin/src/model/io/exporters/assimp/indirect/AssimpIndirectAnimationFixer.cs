@@ -61,9 +61,11 @@ public sealed class AssimpIndirectAnimationFixer {
         continue;
       }
 
-      if (!finAnimation.BoneTracks.TryGetValue(bone, out var boneTracks)) {
+      if (!finAnimation.BoneTracks.ContainsKey(bone)) {
         continue;
       }
+
+      var boneTracks = finAnimation.BoneTracks[bone];
 
       var hasTranslations = boneTracks.Translations?.HasAnyData ?? false;
       var hasRotations = boneTracks.Rotations?.HasAnyData ?? false;
