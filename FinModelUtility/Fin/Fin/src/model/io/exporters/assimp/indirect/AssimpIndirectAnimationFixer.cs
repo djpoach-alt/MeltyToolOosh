@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
+using System.Reflection;
 
 using Assimp;
 
@@ -69,27 +71,25 @@ public sealed class AssimpIndirectAnimationFixer {
       if (hasTranslations) {
         boneTracks.Translations!.GetAllFrames(translationsOrScales);
         for (var frame = 0; frame < translationsOrScales.Length; ++frame) {
-          channel.PositionKeys.Add(new VectorKey(
+          channel.PositionKeys.Add(CreateVectorKey_(
               frame,
-              ToAssimpVector_(translationsOrScales[frame] * MODEL_SCALE)));
+              translationsOrScales[frame] * MODEL_SCALE));
         }
       }
 
       if (hasRotations) {
         boneTracks.Rotations!.GetAllFrames(rotations);
         for (var frame = 0; frame < rotations.Length; ++frame) {
-          channel.RotationKeys.Add(new QuaternionKey(
-              frame,
-              ToAssimpQuaternion_(rotations[frame])));
+          channel.RotationKeys.Add(CreateQuaternionKey_(frame, rotations[frame]));
         }
       }
 
       if (hasScales) {
         boneTracks.Scales!.GetAllFrames(translationsOrScales);
         for (var frame = 0; frame < translationsOrScales.Length; ++frame) {
-          channel.ScalingKeys.Add(new VectorKey(
+          channel.ScalingKeys.Add(CreateVectorKey_(
               frame,
-              ToAssimpVector_(translationsOrScales[frame])));
+              translationsOrScales[frame]));
         }
       }
 
@@ -99,6 +99,99 @@ public sealed class AssimpIndirectAnimationFixer {
     return assAnimation.NodeAnimationChannels.Count > 0
         ? assAnimation
         : null;
+  }
+
+  private static VectorKey CreateVectorKey_(double time, Vector3 value) {
+    var ctor = typeof(VectorKey).GetConstructors()
+                                .FirstOrDefault(c => c.GetParameters().Length == 2)
+               ?? throw new InvalidOperationException(
+                   "Could not find a usable VectorKey constructor.");
+
+    var valueType = ctor.GetParameters()[1].ParameterType;
+    var assimpValue = CreateVectorLikeValue_(valueType, value.X, value.Y, value.Z);
+    return (VectorKey) ctor.Invoke([time, assimpValue]);
+  }
+
+  private static QuaternionKey CreateQuaternionKey_(
+      double time,
+      NumericsQuaternion value) {
+    var ctor = typeof(QuaternionKey).GetConstructors()
+                                    .FirstOrDefault(c => c.GetParameters().Length == 2)
+               ?? throw new InvalidOperationException(
+                   "Could not find a usable QuaternionKey constructor.");
+
+    var valueType = ctor.GetParameters()[1].ParameterType;
+    var assimpValue = CreateQuaternionLikeValue_(valueType, value);
+    return (QuaternionKey) ctor.Invoke([time, assimpValue]);
+  }
+
+  private static object CreateVectorLikeValue_(Type type,
+                                               float x,
+                                               float y,
+                                               float z) {
+    if (type == typeof(Vector3)) {
+      return new Vector3(x, y, z);
+    }
+
+    var instance = Activator.CreateInstance(type);
+    if (instance != null &&
+        TrySetComponent_(instance, type, "X", x) &&
+        TrySetComponent_(instance, type, "Y", y) &&
+        TrySetComponent_(instance, type, "Z", z)) {
+      return instance;
+    }
+
+    var ctor = type.GetConstructor([typeof(float), typeof(float), typeof(float)]);
+    if (ctor != null) {
+      return ctor.Invoke([x, y, z]);
+    }
+
+    throw new InvalidOperationException(
+        $"Could not construct vector value for Assimp type '{type.FullName}'.");
+  }
+
+  private static object CreateQuaternionLikeValue_(Type type,
+                                                   NumericsQuaternion value) {
+    if (type == typeof(NumericsQuaternion)) {
+      return value;
+    }
+
+    var instance = Activator.CreateInstance(type);
+    if (instance != null &&
+        TrySetComponent_(instance, type, "X", value.X) &&
+        TrySetComponent_(instance, type, "Y", value.Y) &&
+        TrySetComponent_(instance, type, "Z", value.Z) &&
+        TrySetComponent_(instance, type, "W", value.W)) {
+      return instance;
+    }
+
+    var ctor = type.GetConstructor(
+        [typeof(float), typeof(float), typeof(float), typeof(float)]);
+    if (ctor != null) {
+      return ctor.Invoke([value.X, value.Y, value.Z, value.W]);
+    }
+
+    throw new InvalidOperationException(
+        $"Could not construct quaternion value for Assimp type '{type.FullName}'.");
+  }
+
+  private static bool TrySetComponent_(object instance,
+                                       Type type,
+                                       string name,
+                                       float value) {
+    var property = type.GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
+    if (property?.CanWrite == true) {
+      property.SetValue(instance, value);
+      return true;
+    }
+
+    var field = type.GetField(name, BindingFlags.Public | BindingFlags.Instance);
+    if (field != null) {
+      field.SetValue(instance, value);
+      return true;
+    }
+
+    return false;
   }
 
   private static void PopulateNodes_(
@@ -112,10 +205,4 @@ public sealed class AssimpIndirectAnimationFixer {
       PopulateNodes_(child, nodesByName);
     }
   }
-
-  private static Vector3D ToAssimpVector_(Vector3 value)
-    => new() { X = value.X, Y = value.Y, Z = value.Z };
-
-  private static Assimp.Quaternion ToAssimpQuaternion_(NumericsQuaternion value)
-    => new() { X = value.X, Y = value.Y, Z = value.Z, W = value.W };
 }
