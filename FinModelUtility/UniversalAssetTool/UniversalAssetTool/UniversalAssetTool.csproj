@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <RootNamespace>uni</RootNamespace>
-    <OutputType>Exe</OutputType>
-    <UseAppHost>true</UseAppHost>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
