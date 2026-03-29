@@ -53,9 +53,15 @@ public sealed class AssimpIndirectAnimationFixer {
     };
 
     foreach (var bone in bones) {
-      if (string.IsNullOrEmpty(bone.Name) ||
-          !nodesByName.TryGetValue(bone.Name, out var node) ||
-          !finAnimation.BoneTracks.TryGetValue(bone, out var boneTracks)) {
+      if (string.IsNullOrEmpty(bone.Name)) {
+        continue;
+      }
+
+      if (!nodesByName.TryGetValue(bone.Name, out var node)) {
+        continue;
+      }
+
+      if (!finAnimation.BoneTracks.TryGetValue(bone, out var boneTracks)) {
         continue;
       }
 
