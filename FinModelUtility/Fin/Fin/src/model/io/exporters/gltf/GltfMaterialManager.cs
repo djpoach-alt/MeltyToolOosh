@@ -27,13 +27,13 @@ public static class GltfMaterialBuilder {
     Console.WriteLine(
         $"[GLTFDBG] MATERIAL name='{material.Name ?? "<null>"}' " +
         $"type='{material.GetType().FullName}' " +
-        $"textureCount={material.Textures.Count} " +
+        $"textureCount={material.Textures.Count()} " +
         $"textures=[{textureNames}]");
   }
 
   private static void DebugChannel_(IReadOnlyMaterial material,
                                     string channel,
-                                   IReadOnlyTexture? texture) {
+                                    IReadOnlyTexture? texture) {
     Console.WriteLine(
         $"[GLTFDBG] CHANNEL material='{material.Name ?? "<null>"}' " +
         $"type='{material.GetType().Name}' " +
@@ -73,7 +73,7 @@ public static class GltfMaterialBuilder {
     var finImages = finMaterialManager.Textures
                                       .Select(texture => texture.Image)
                                       .Distinct()
-                                     .ToArray();
+                                      .ToArray();
     var gltfImageByFinImage
         = new ConcurrentDictionary<IReadOnlyImage, MemoryImage>();
     ParallelHelper.For(0,
@@ -82,52 +82,42 @@ public static class GltfMaterialBuilder {
                            finImages,
                            gltfImageByFinImage));
 
-    // TODO: Update this if GLTF is ever extended...
     return finMaterialManager.All.Select(
         finMaterial => {
           var gltfMaterialBuilder
-              = new MaterialBuilder(
-                      finMaterial.Name)
+              = new MaterialBuilder(finMaterial.Name)
                   .WithDoubleSide(
-                      finMaterial.CullingMode
-                          switch {
-                              CullingMode.SHOW_FRONT_ONLY => false,
-                              // Darn, guess we can't support this.
-                              CullingMode.SHOW_BACK_ONLY => true,
-                              CullingMode.SHOW_BOTH      => true,
-                              // Darn, guess we can't support this either.
-                              CullingMode.SHOW_NEITHER => false,
-                              _ => throw new ArgumentOutOfRangeException()
-                          });
+                      finMaterial.CullingMode switch {
+                          CullingMode.SHOW_FRONT_ONLY => false,
+                          CullingMode.SHOW_BACK_ONLY => true,
+                          CullingMode.SHOW_BOTH => true,
+                          CullingMode.SHOW_NEITHER => false,
+                          _ => throw new ArgumentOutOfRangeException()
+                      });
 
           DebugMaterialHeader_(finMaterial);
 
           switch (finMaterial) {
-
             case IStandardMaterial standardMaterial: {
               gltfMaterialBuilder
                   .WithSpecularGlossinessShader()
-                  .WithSpecularGlossiness(
-                      new Vector3(0),
-                      0);
+                  .WithSpecularGlossiness(new Vector3(0), 0);
 
               var diffuseTexture = standardMaterial.DiffuseTexture;
               if (diffuseTexture != null) {
                 gltfMaterialBuilder
                     .UseChannel(KnownChannel.Diffuse)
                     .UseTexture(diffuseTexture,
-                                        gltfImageByFinImage[diffuseTexture.Image]);
+                                gltfImageByFinImage[diffuseTexture.Image]);
               }
               DebugChannel_(finMaterial, "Diffuse", diffuseTexture);
 
-              // TODO: Include diffuse color
-
               var normalTexture = standardMaterial.NormalTexture;
               if (normalTexture != null) {
-                gltfMaterialBuilder.UseChannel(KnownChannel.Normal)
-                                   .UseTexture(normalTexture,
-                                               gltfImageByFinImage
-                                                    [normalTexture.Image]);
+                gltfMaterialBuilder
+                    .UseChannel(KnownChannel.Normal)
+                    .UseTexture(normalTexture,
+                                gltfImageByFinImage[normalTexture.Image]);
               }
               DebugChannel_(finMaterial, "Normal", normalTexture);
 
@@ -136,85 +126,52 @@ public static class GltfMaterialBuilder {
                 gltfMaterialBuilder
                     .UseChannel(KnownChannel.Emissive)
                     .UseTexture(emissiveTexture,
-                                        gltfImageByFinImage[emissiveTexture.Image]);
+                                gltfImageByFinImage[emissiveTexture.Image]);
               }
               DebugChannel_(finMaterial, "Emissive", emissiveTexture);
 
-              /*var specularTexture = standardMaterial.SpecularTexture;
-              if (specularTexture != null) {
-                gltfMaterial.WithSpecularGlossiness(
-                    GltfModelExporter.GetGltfImageFromFinTexture_(
-                        specularTexture), new Vector3(.1f), .1f);
-              }*/
-
-              var ambientOcclusionTexture
-                  = standardMaterial.AmbientOcclusionTexture;
+              var ambientOcclusionTexture = standardMaterial.AmbientOcclusionTexture;
               if (ambientOcclusionTexture != null) {
                 gltfMaterialBuilder
                     .UseChannel(KnownChannel.Occlusion)
                     .UseTexture(ambientOcclusionTexture,
-                                        gltfImageByFinImage[
-                                                ambientOcclusionTexture.Image]);
+                                gltfImageByFinImage[ambientOcclusionTexture.Image]);
               }
               DebugChannel_(finMaterial, "Occlusion", ambientOcclusionTexture);
-
               break;
             }
             case IFixedFunctionMaterial fixedFunctionMaterial: {
               var equations = fixedFunctionMaterial.Equations;
-              var usesSpecular
-                  = equations
-                      .DoOutputsDependOn(
-                          Enumerable
-                              .Range(0,
-                                     MaterialConstants
-                                         .MAX_LIGHTS)
-                              .SelectMany<int
-                                  , FixedFunctionSource>(
-                                  i => [
-                                      FixedFunctionSource
-                                          .LIGHT_SPECULAR_COLOR_0 +
-                                      i,
-                                      FixedFunctionSource
-                                          .LIGHT_SPECULAR_ALPHA_0 +
-                                      i
-                                  ])
-                              .Concat([
-                                  FixedFunctionSource
-                                      .LIGHT_SPECULAR_COLOR_MERGED,
-                                  FixedFunctionSource
-                                      .LIGHT_SPECULAR_ALPHA_MERGED
-                                ])
-                              .ToArray());
-              var usesDiffuse
-                  = equations
-                      .DoOutputsDependOn(
-                          Enumerable
-                              .Range(0, MaterialConstants.MAX_LIGHTS)
-                              .SelectMany<int, FixedFunctionSource>(i => [
-                                  FixedFunctionSource.LIGHT_DIFFUSE_COLOR_0 +
-                                  i,
-                                  FixedFunctionSource.LIGHT_DIFFUSE_ALPHA_0 +
-                                  i
-                              ])
-                              .Concat([
-                                  FixedFunctionSource
-                                      .LIGHT_DIFFUSE_COLOR_MERGED,
-                                  FixedFunctionSource
-                                      .LIGHT_DIFFUSE_ALPHA_MERGED
-                                ])
-                              .ToArray());
+              var usesSpecular = equations.DoOutputsDependOn(
+                  Enumerable.Range(0, MaterialConstants.MAX_LIGHTS)
+                            .SelectMany<int, FixedFunctionSource>(i => [
+                                FixedFunctionSource.LIGHT_SPECULAR_COLOR_0 + i,
+                                FixedFunctionSource.LIGHT_SPECULAR_ALPHA_0 + i
+                            ])
+                            .Concat([
+                                FixedFunctionSource.LIGHT_SPECULAR_COLOR_MERGED,
+                                FixedFunctionSource.LIGHT_SPECULAR_ALPHA_MERGED
+                            ])
+                            .ToArray());
+              var usesDiffuse = equations.DoOutputsDependOn(
+                  Enumerable.Range(0, MaterialConstants.MAX_LIGHTS)
+                            .SelectMany<int, FixedFunctionSource>(i => [
+                                FixedFunctionSource.LIGHT_DIFFUSE_COLOR_0 + i,
+                                FixedFunctionSource.LIGHT_DIFFUSE_ALPHA_0 + i
+                            ])
+                            .Concat([
+                                FixedFunctionSource.LIGHT_DIFFUSE_COLOR_MERGED,
+                                FixedFunctionSource.LIGHT_DIFFUSE_ALPHA_MERGED
+                            ])
+                            .ToArray());
 
               KnownChannel mainTextureChannel;
               if (usesSpecular) {
-                // TODO: Get specular color
                 gltfMaterialBuilder
                     .WithSpecularGlossinessShader()
-                    .WithSpecularGlossiness(null,
-                                            fixedFunctionMaterial.Shininess);
+                    .WithSpecularGlossiness(null, fixedFunctionMaterial.Shininess);
                 mainTextureChannel = KnownChannel.Diffuse;
               } else if (usesDiffuse) {
-                // TODO: Get diffuse color
                 gltfMaterialBuilder.WithMetallicRoughnessShader();
                 mainTextureChannel = KnownChannel.BaseColor;
               } else {
@@ -222,20 +179,16 @@ public static class GltfMaterialBuilder {
                 mainTextureChannel = KnownChannel.BaseColor;
               }
 
-              var texture
-                  = PrimaryTextureFinder
-                      .GetFor(finMaterial);
+              var texture = PrimaryTextureFinder.GetFor(finMaterial);
               DebugChannel_(finMaterial, $"Primary->{mainTextureChannel}", texture);
               if (texture != null) {
-                var alphaMode = texture.TransparencyType
-                    switch {
-                        TransparencyType.OPAQUE => AlphaMode.OPAQUE,
-                        TransparencyType.MASK => AlphaMode.MASK,
-                        TransparencyType.TRANSPARENT => AlphaMode.BLEND,
-                        _ => throw new ArgumentOutOfRangeException()
-                    };
+                var alphaMode = texture.TransparencyType switch {
+                    TransparencyType.OPAQUE => AlphaMode.OPAQUE,
+                    TransparencyType.MASK => AlphaMode.MASK,
+                    TransparencyType.TRANSPARENT => AlphaMode.BLEND,
+                    _ => throw new ArgumentOutOfRangeException()
+                };
                 gltfMaterialBuilder.WithAlpha(alphaMode);
-
                 gltfMaterialBuilder
                     .UseChannel(mainTextureChannel)
                     .UseTexture(texture, gltfImageByFinImage[texture.Image]);
@@ -246,88 +199,74 @@ public static class GltfMaterialBuilder {
                 gltfMaterialBuilder
                     .UseChannel(KnownChannel.Normal)
                     .UseTexture(normalTexture,
-                                        gltfImageByFinImage[normalTexture.Image]);
+                                gltfImageByFinImage[normalTexture.Image]);
               }
               DebugChannel_(finMaterial, "Normal", normalTexture);
 
-              var extraTextures =
-                  fixedFunctionMaterial.Textures
-                               .Where(extraTexture =>
-                                      extraTexture != texture &&
-                                      extraTexture != normalTexture)
-                               .DistinctBy(extraTexture => extraTexture.Name)
-                               .ToArray();
+              var extraTextures = fixedFunctionMaterial.Textures
+                  .Where(extraTexture => extraTexture != texture && extraTexture != normalTexture)
+                  .DistinctBy(extraTexture => extraTexture.Name)
+                  .ToArray();
 
               if (extraTextures.Length > 0) {
                 gltfMaterialBuilder
                     .UseChannel(KnownChannel.Emissive)
                     .UseTexture(extraTextures[0],
-                                        gltfImageByFinImage[extraTextures[0].Image]);
+                                gltfImageByFinImage[extraTextures[0].Image]);
               }
-              DebugChannel_(finMaterial,
-                                "Emissive(extra0)",
-                                extraTextures.Length > 0 ? extraTextures[0] : null);
+              DebugChannel_(finMaterial, "Emissive(extra0)",
+                            extraTextures.Length > 0 ? extraTextures[0] : null);
 
               if (extraTextures.Length > 1) {
                 gltfMaterialBuilder
                     .UseChannel(KnownChannel.Occlusion)
                     .UseTexture(extraTextures[1],
-                                        gltfImageByFinImage[extraTextures[1].Image]);
+                                gltfImageByFinImage[extraTextures[1].Image]);
               }
-              DebugChannel_(finMaterial,
-                                "Occlusion(extra1)",
-                                extraTextures.Length > 1 ? extraTextures[1] : null);
-
+              DebugChannel_(finMaterial, "Occlusion(extra1)",
+                            extraTextures.Length > 1 ? extraTextures[1] : null);
               break;
             }
             default: {
               var texture = PrimaryTextureFinder.GetFor(finMaterial);
               DebugChannel_(finMaterial, "Primary->Diffuse", texture);
               if (texture != null) {
-                var alphaMode = texture.TransparencyType
-                    switch {
-                        TransparencyType.OPAQUE => AlphaMode.OPAQUE,
-                        TransparencyType.MASK => AlphaMode.MASK,
-                        TransparencyType.TRANSPARENT => AlphaMode.BLEND,
-                        _ => throw new ArgumentOutOfRangeException()
-                    };
+                var alphaMode = texture.TransparencyType switch {
+                    TransparencyType.OPAQUE => AlphaMode.OPAQUE,
+                    TransparencyType.MASK => AlphaMode.MASK,
+                    TransparencyType.TRANSPARENT => AlphaMode.BLEND,
+                    _ => throw new ArgumentOutOfRangeException()
+                };
                 gltfMaterialBuilder.WithAlpha(alphaMode);
-
                 gltfMaterialBuilder
                     .WithSpecularGlossinessShader()
                     .WithSpecularGlossiness(null, 0)
                     .UseChannel(KnownChannel.Diffuse)
-                    .UseTexture(
-                        texture,
-                        gltfImageByFinImage[texture.Image]);
+                    .UseTexture(texture, gltfImageByFinImage[texture.Image]);
 
-                var extraTextures =
-                    finMaterial.Textures
-                       .Where(extraTexture => extraTexture != texture)
-                       .DistinctBy(extraTexture => extraTexture.Name)
-                       .ToArray();
+                var extraTextures = finMaterial.Textures
+                    .Where(extraTexture => extraTexture != texture)
+                    .DistinctBy(extraTexture => extraTexture.Name)
+                    .ToArray();
 
                 if (extraTextures.Length > 0) {
                   gltfMaterialBuilder
                       .UseChannel(KnownChannel.Emissive)
                       .UseTexture(extraTextures[0],
-                                        gltfImageByFinImage[extraTextures[0].Image]);
+                                  gltfImageByFinImage[extraTextures[0].Image]);
                 }
-                DebugChannel_(finMaterial,
-                                  "Emissive(extra0)",
-                                  extraTextures.Length > 0 ? extraTextures[0] : null);
+                DebugChannel_(finMaterial, "Emissive(extra0)",
+                              extraTextures.Length > 0 ? extraTextures[0] : null);
 
                 if (extraTextures.Length > 1) {
                   gltfMaterialBuilder
                       .UseChannel(KnownChannel.Occlusion)
                       .UseTexture(extraTextures[1],
-                                        gltfImageByFinImage[extraTextures[1].Image]);
+                                  gltfImageByFinImage[extraTextures[1].Image]);
                 }
-                DebugChannel_(finMaterial,
-                                  "Occlusion(extra1)",
-                                  extraTextures.Length > 1 ? extraTextures[1] : null);
+                DebugChannel_(finMaterial, "Occlusion(extra1)",
+                              extraTextures.Length > 1 ? extraTextures[1] : null);
               }
-
               break;
             }
           }

@@ -17,7 +17,7 @@ public static class PrimaryTextureFinder {
         $"type='{material.GetType().FullName}' " +
         $"reason='{reason}' " +
         $"chosen='{chosen?.Name ?? "<null>"}' " +
-        $"textureCount={material.Textures.Count} " +
+        $"textureCount={material.Textures.Count()} " +
         $"textures=[{textureNames}]");
   }
 
@@ -55,11 +55,7 @@ public static class PrimaryTextureFinder {
 
   public static IReadOnlyTexture? GetFor(
       IReadOnlyFixedFunctionMaterial material) {
-    var equations = material.Equations;
-
     var textures = material.Textures;
-
-    // TODO: Use some kind of priority class
 
     var compiledTexture = material.CompiledTexture;
     if (compiledTexture != null) {
@@ -67,18 +63,14 @@ public static class PrimaryTextureFinder {
       return compiledTexture;
     }
 
-    var prioritizedTextures =
-        textures
-            // Sort by UV type, "normal" first
-            .OrderByDescending(
-                texture => texture.ColorType == ColorType.COLOR)
-            .ThenByDescending(
-                texture => TransparencyTypeUtil.GetTransparencyType(texture.Image) ==
-                           TransparencyType.OPAQUE)
-            .ToArray();
+    var prioritizedTextures = textures
+        .OrderByDescending(texture => texture.ColorType == ColorType.COLOR)
+        .ThenByDescending(texture =>
+            TransparencyTypeUtil.GetTransparencyType(texture.Image) ==
+            TransparencyType.OPAQUE)
+        .ToArray();
 
     if (prioritizedTextures.Length > 0) {
-      // TODO: First or last?
       DebugChoice_(material, "prioritized first texture", prioritizedTextures[0]);
       return prioritizedTextures[0];
     }
@@ -86,9 +78,6 @@ public static class PrimaryTextureFinder {
     var fallback = material.Textures.LastOrDefault((IReadOnlyTexture?) null);
     DebugChoice_(material, "last texture fallback", fallback);
     return fallback;
-
-    // TODO: Prioritize textures w/ color rather than intensity
-    // TODO: Prioritize textures w/ standard texture sets
   }
 
   public static IReadOnlyTexture? GetFor(IReadOnlyStandardMaterial material) {
