@@ -42,6 +42,7 @@ public enum FilmstripId {
   MARTINI_GLASS = 0x2,
   RED_WINE_BOTTLE = 0x3,
   WHITE_WINE_BOTTLE = 0x4,
+  PLAYERS_DRINK = 0x6,
   PAINTING_1 = 0x10,
   LITTLE_PAINTING = 0x11,
   WEDDING_PHOTO = 0x12,
@@ -72,22 +73,24 @@ public enum FilmstripId {
 }
 
 public enum ColorId {
+  FRIDGE_BOTTOM = 0x10,
   WINDOW = 0x20,
+  FRIDGE = 0x24,
   COLOR_0x2E = 0x2E,
   COLOR_0x2F = 0x2F,
   COLOR_0x30 = 0x30,
   COLOR_0x31 = 0x31,
   COLOR_0x32 = 0x32,
   COLOR_0x33 = 0x33,
-  COLOR_0x34 = 0x34,
-  COLOR_0x35 = 0x35,
+  LIVING_ROOM_FRONT_WALL = 0x34,
+  FOYER_WALL = 0x35,
   COLOR_0x36 = 0x36,
   COLOR_0x37 = 0x37,
-  COLOR_0x38 = 0x38,
+  CEILING = 0x38,
   COLOR_0x39 = 0x39,
   COLOR_0x3A = 0x3A,
   FLOOR = 0x3b,
-  WALL = 0xFF,
+  LIVING_ROOM_WALL = 0xFF,
 }
 
 file class FacadeRoomModelBuilder {
@@ -313,10 +316,10 @@ file class FacadeRoomModelBuilder {
               ColorId.COLOR_0x33 => Color.FromArgb((byte) (255 * .05f),
                                                    (byte) (255 * .05f),
                                                    (byte) (255 * .05f)),
-              ColorId.COLOR_0x34 => Color.FromArgb((byte) (255 * .1f),
+              ColorId.LIVING_ROOM_FRONT_WALL => Color.FromArgb((byte) (255 * .1f),
                                                    (byte) (255 * .1f),
                                                    (byte) (255 * .1f)),
-              ColorId.COLOR_0x35 => Color.FromArgb((byte) (255 * .15f),
+              ColorId.FOYER_WALL => Color.FromArgb((byte) (255 * .15f),
                                                    (byte) (255 * .15f),
                                                    (byte) (255 * .15f)),
               ColorId.COLOR_0x36 => Color.FromArgb((byte) (255 * .2f),
@@ -325,7 +328,7 @@ file class FacadeRoomModelBuilder {
               ColorId.COLOR_0x37 => Color.FromArgb((byte) (255 * .25f),
                                                    (byte) (255 * .25f),
                                                    (byte) (255 * .25f)),
-              ColorId.COLOR_0x38 => Color.FromArgb((byte) (255 * .3f),
+              ColorId.CEILING => Color.FromArgb((byte) (255 * .3f),
                                                    (byte) (255 * .3f),
                                                    (byte) (255 * .3f)),
               ColorId.COLOR_0x39 => Color.FromArgb((byte) (255 * .35f),
@@ -337,7 +340,7 @@ file class FacadeRoomModelBuilder {
               ColorId.FLOOR => Color.FromArgb((byte) (255 * .45f),
                                               (byte) (255 * .45f),
                                               (byte) (255 * .45f)),
-              ColorId.WALL => Color.Black,
+              ColorId.LIVING_ROOM_WALL => Color.Black,
               _            => null,
           };
 
@@ -569,42 +572,42 @@ file class FacadeRoomModelBuilder {
     this.AddPlane_(
         "LR_backwall1",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(70, 160),
         new Vector3(-165, 80, -500),
         0);
     this.AddPlane_(
         "LR_backwallsliver1",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(6.5f, 160),
         new Vector3(-66, 80, -500),
         0);
     this.AddPlane_(
         "LR_backwallsliver2",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(6.5f, 160),
         new Vector3(6, 80, -500),
         0);
     this.AddPlane_(
         "LR_backwall3",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(30, 160),
         new Vector3(85, 80, -500),
         0);
     this.AddPlane_(
         "LR_backwall4",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(100, 160),
         new Vector3(150, 80, -500),
         0);
     this.AddPlane_(
         "LR_backwalltoppanel",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(200, 10),
         new Vector3(-30, 155, -500),
         0);
@@ -612,42 +615,42 @@ file class FacadeRoomModelBuilder {
     this.AddPlane_(
         "LR_leftwall0",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(70, 160),
         new Vector3(-200, 80, -5),
         90);
     this.AddPlane_(
         "LR_leftwall1",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(100, 160),
         new Vector3(-200, 80, -90),
         90);
     this.AddPlane_(
         "LR_leftwall2",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(100, 160),
         new Vector3(-200, 80, -190),
         90);
     this.AddPlane_(
         "LR_leftwall3",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(100, 160),
         new Vector3(-200, 80, -290),
         90);
     this.AddPlane_(
         "LR_leftwall4",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(60, 160),
         new Vector3(-200, 80, -370),
         90);
     this.AddPlane_(
         "LR_leftwall5",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(100, 160),
         new Vector3(-200, 80, -450),
         90);
@@ -655,42 +658,42 @@ file class FacadeRoomModelBuilder {
     this.AddPlane_(
         "LR_rightwall0",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(100, 160),
         new Vector3(200, 80, 50),
         90);
     this.AddPlane_(
         "LR_rightwall1",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(100, 160),
         new Vector3(200, 80, -50),
         90);
     this.AddPlane_(
         "LR_rightwall2",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(100, 160),
         new Vector3(200, 80, -150),
         90);
     this.AddPlane_(
         "LR_rightwall3",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(100, 160),
         new Vector3(200, 80, -250),
         90);
     this.AddPlane_(
         "LR_rightwall4",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(100, 160),
         new Vector3(200, 80, -350),
         90);
     this.AddPlane_(
         "LR_rightwall5",
         null,
-        ColorId.WALL,
+        ColorId.LIVING_ROOM_WALL,
         new Vector2(100, 160),
         new Vector3(200, 80, -450),
         90);
@@ -717,6 +720,104 @@ file class FacadeRoomModelBuilder {
         new Vector3(41, 77, -498),
         0);
 
+    this.AddPlane_(
+        "LR_frontwallL",
+        null,
+        ColorId.LIVING_ROOM_FRONT_WALL,
+        new Vector2(60, 160),
+        new Vector3(170, 80, 98),
+        0);
+    this.AddPlane_(
+        "LR_frontwallR1",
+        null,
+        ColorId.LIVING_ROOM_FRONT_WALL,
+        new Vector2(66, 160),
+        new Vector3(17, 80, 98),
+        0);
+    this.AddPlane_(
+        "LR_frontwallR1_real",
+        null,
+        ColorId.LIVING_ROOM_FRONT_WALL,
+        new Vector2(50, 160),
+        new Vector3(2, 80, 108),
+        0);
+    this.AddPlane_(
+        "LR_frontwallR2",
+        null,
+        ColorId.LIVING_ROOM_FRONT_WALL,
+        new Vector2(80, 160),
+        new Vector3(-46, 80, 98),
+        0);
+
+    this.AddPlane_(
+        "FY_leftwall1",
+        null,
+        ColorId.FOYER_WALL,
+        new Vector2(100, 160),
+        new Vector3(-225, 80, 72),
+        60);
+
+    this.AddPlane_(
+        "KI_fridgeside1",
+        null,
+        ColorId.FRIDGE,
+        new Vector2(60, 120),
+        new Vector3(-20, 60, 430),
+        90);
+    this.AddPlane_(
+        "KI_fridgeside2",
+        null,
+        ColorId.FRIDGE,
+        new Vector2(60, 120),
+        new Vector3(40, 60, 430),
+        90);
+    this.AddPlane_(
+        "KI_fridgefront1",
+        null,
+        ColorId.FRIDGE,
+        new Vector2(60, 40),
+        new Vector3(10, 100, 400),
+        0);
+    this.AddPlane_(
+        "KI_fridgefront2",
+        null,
+        ColorId.FRIDGE,
+        new Vector2(60, 72),
+        new Vector3(10, 44, 400),
+        0);
+    this.AddPlane_(
+        "KI_fridgefrontbottom",
+        null,
+        ColorId.FRIDGE_BOTTOM,
+        new Vector2(60, 8),
+        new Vector3(10, 4, 401),
+        0);
+
+    this.AddFloor_(
+        "ceiling1",
+        null,
+        ColorId.CEILING,
+        new Vector2(500, 600),
+        new Vector3(-250, 160, 300));
+    this.AddFloor_(
+        "ceiling2",
+        null,
+        ColorId.CEILING,
+        new Vector2(500, 600),
+        new Vector3(250, 160, 300));
+    this.AddFloor_(
+        "ceiling3",
+        null,
+        ColorId.CEILING,
+        new Vector2(500, 600),
+        new Vector3(-250, 160, -300));
+    this.AddFloor_(
+        "ceiling4",
+        null,
+        ColorId.CEILING,
+        new Vector2(500, 600),
+        new Vector3(250, 160, -300));
+
     this.AddFloor_(
         "floor1",
         null,
@@ -741,6 +842,13 @@ file class FacadeRoomModelBuilder {
         ColorId.FLOOR,
         new Vector2(500, 600),
         new Vector3(250, 0, -300));
+
+    this.AddFloor_(
+        "rug",
+        FilmstripId.RUG,
+        null,
+        new Vector2(50, 100),
+        new Vector3(85, 3, -350));
   }
 
   private void AddSprites_() {
@@ -793,11 +901,23 @@ file class FacadeRoomModelBuilder {
     this.AddSprite_("bar_redwinebottle",
                     FilmstripId.RED_WINE_BOTTLE,
                     new Vector2(25),
-                    new Vector3(-100f, -100, -100));
+                    new Vector3(-100));
     this.AddSprite_("bar_whitewinebottle",
                     FilmstripId.WHITE_WINE_BOTTLE,
                     new Vector2(25),
-                    new Vector3(-100f, -100, -100));
+                    new Vector3(-100));
+    /*this.AddSprite_("player's drink",
+                    6,
+                    new Vector2(12),
+                    new Vector3(-170f, 73, -110));
+    this.AddSprite_("Trip's drink",
+                    6,
+                    new Vector2(12),
+                    new Vector3(-100));
+    this.AddSprite_("Grace's drink",
+                    5,
+                    new Vector2(12),
+                    new Vector3(-100));*/
 
     this.AddPlane_(
         "big abstract painting",
@@ -820,12 +940,6 @@ file class FacadeRoomModelBuilder {
         new Vector2(40, 50),
         new Vector3(215, 100, 400),
         90);
-    this.AddFloor_(
-        "rug",
-        FilmstripId.RUG,
-        null,
-        new Vector2(50, 100),
-        new Vector3(85, 3, -350));
     this.AddPlane_(
         "wedding photo",
         FilmstripId.WEDDING_PHOTO,
@@ -917,6 +1031,21 @@ file class FacadeRoomModelBuilder {
         FilmstripId.TRINKET_5,
         new Vector2(16),
         new Vector3(-186, 75, -405));
+    this.AddSprite_(
+        "trinket 6",
+        FilmstripId.TRINKET_6,
+        new Vector2(20),
+        new Vector3(-186, 98, -399));
+    this.AddSprite_(
+        "trinket 7",
+        FilmstripId.TRINKET_7,
+        new Vector2(16),
+        new Vector3(-186, 96, -424));
+    this.AddSprite_(
+        "trinket 8",
+        FilmstripId.TRINKET_8,
+        new Vector2(16),
+        new Vector3(-186, 96, -450));
   }
 
   private void AddSprite_(
