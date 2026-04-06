@@ -54,10 +54,6 @@ public sealed class GltfModelExporter : IGltfModelExporter {
         scale,
         model.AnimationManager.Animations);
 
-    if (ExporterRuntimeOptions.AnimationOnly) {
-      return modelRoot;
-    }
-
     // Builds materials.
     var finToTexCoordAndGltfMaterial =
         GltfMaterialBuilder.GetMaterialBuilders(model.MaterialManager);

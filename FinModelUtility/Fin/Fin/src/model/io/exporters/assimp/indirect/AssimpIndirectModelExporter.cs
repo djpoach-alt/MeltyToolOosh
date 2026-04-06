@@ -57,7 +57,6 @@ public sealed class AssimpIndirectModelExporter : IModelExporter {
     var outputDirectory = outputFile.AssertGetParent();
     var model = modelExporterParams.Model;
     var scale = modelExporterParams.Scale;
-    var animationOnly = ExporterRuntimeOptions.AnimationOnly;
 
     if (exportedFormats.Count == 0) {
       return;
@@ -78,7 +77,7 @@ public sealed class AssimpIndirectModelExporter : IModelExporter {
                                     !isGltfFormat(exportedFormat))
                          .ToArray();
 
-    if (!animationOnly && exportAllTextures) {
+    if (exportAllTextures) {
       var textures = model.MaterialManager.Textures.DistinctBy(t => t.Name)
                           .ToArray();
       ParallelHelper.For(0,
@@ -86,26 +85,24 @@ public sealed class AssimpIndirectModelExporter : IModelExporter {
                          new SaveTextureAction(outputDirectory, textures));
     }
 
-    if (!animationOnly) {
-      var modelRequirements = ModelRequirements.FromModel(model);
+    var modelRequirements = ModelRequirements.FromModel(model);
 
-      var finMaterials = model.MaterialManager.All;
-      for (var i = 0; i < finMaterials.Count; ++i) {
-        var finMaterial = finMaterials[i];
-        var materialName =
-            finMaterial.Name?.ReplaceInvalidFilenameCharacters() ??
-            $"material{i}";
+    var finMaterials = model.MaterialManager.All;
+    for (var i = 0; i < finMaterials.Count; ++i) {
+      var finMaterial = finMaterials[i];
+      var materialName =
+          finMaterial.Name?.ReplaceInvalidFilenameCharacters() ??
+          $"material{i}";
 
-        var shaderSource = finMaterial.ToShaderSource(model, modelRequirements);
-        var vertexShaderFile = new FinFile(
-            Path.Combine(outputDirectory.FullPath,
-                         $"{materialName}.vertex.glsl"));
-        var fragmentShaderFile = new FinFile(
-            Path.Combine(outputDirectory.FullPath,
-                         $"{materialName}.fragment.glsl"));
-        vertexShaderFile.WriteAllText(shaderSource.VertexShaderSource);
-        fragmentShaderFile.WriteAllText(shaderSource.FragmentShaderSource);
-      }
+      var shaderSource = finMaterial.ToShaderSource(model, modelRequirements);
+      var vertexShaderFile = new FinFile(
+          Path.Combine(outputDirectory.FullPath,
+                       $"{materialName}.vertex.glsl"));
+      var fragmentShaderFile = new FinFile(
+          Path.Combine(outputDirectory.FullPath,
+                       $"{materialName}.fragment.glsl"));
+      vertexShaderFile.WriteAllText(shaderSource.VertexShaderSource);
+      fragmentShaderFile.WriteAllText(shaderSource.FragmentShaderSource);
     }
 
     if (gltfFormats.Length > 0) {
