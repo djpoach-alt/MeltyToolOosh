@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,6 +21,7 @@ namespace fin.model.io.exporters.assimp.indirect;
 public sealed class AssimpIndirectModelExporter : IModelExporter {
   // You can bet your ass I'm gonna prefix everything with ass.
 
+  public bool AnimationOnly { get; set; }
   public bool LowLevel { get; set; }
   public bool ForceGarbageCollection { get; set; }
 
@@ -77,7 +78,7 @@ public sealed class AssimpIndirectModelExporter : IModelExporter {
                                     !isGltfFormat(exportedFormat))
                          .ToArray();
 
-    if (exportAllTextures) {
+    if (!this.AnimationOnly && exportAllTextures) {
       var textures = model.MaterialManager.Textures.DistinctBy(t => t.Name)
                           .ToArray();
       ParallelHelper.For(0,
@@ -87,25 +88,27 @@ public sealed class AssimpIndirectModelExporter : IModelExporter {
 
     var modelRequirements = ModelRequirements.FromModel(model);
 
-    var finMaterials = model.MaterialManager.All;
-    for (var i = 0; i < finMaterials.Count; ++i) {
-      var finMaterial = finMaterials[i];
-      var materialName =
-          finMaterial.Name?.ReplaceInvalidFilenameCharacters() ??
-          $"material{i}";
+    if (!this.AnimationOnly) {
+      var finMaterials = model.MaterialManager.All;
+      for (var i = 0; i < finMaterials.Count; ++i) {
+        var finMaterial = finMaterials[i];
+        var materialName =
+            finMaterial.Name?.ReplaceInvalidFilenameCharacters() ??
+            $"material{i}";
 
-      var shaderSource = finMaterial.ToShaderSource(model, modelRequirements);
-      var vertexShaderFile = new FinFile(
-          Path.Combine(outputDirectory.FullPath,
-                       $"{materialName}.vertex.glsl"));
-      var fragmentShaderFile = new FinFile(
-          Path.Combine(outputDirectory.FullPath,
-                       $"{materialName}.fragment.glsl"));
-      vertexShaderFile.WriteAllText(shaderSource.VertexShaderSource);
-      fragmentShaderFile.WriteAllText(shaderSource.FragmentShaderSource);
+        var shaderSource = finMaterial.ToShaderSource(model, modelRequirements);
+        var vertexShaderFile = new FinFile(
+            Path.Combine(outputDirectory.FullPath,
+                         $"{materialName}.vertex.glsl"));
+        var fragmentShaderFile = new FinFile(
+            Path.Combine(outputDirectory.FullPath,
+                         $"{materialName}.fragment.glsl"));
+        vertexShaderFile.WriteAllText(shaderSource.VertexShaderSource);
+        fragmentShaderFile.WriteAllText(shaderSource.FragmentShaderSource);
+      }
     }
 
-    if (gltfFormats.Length > 0) {
+    if (!this.AnimationOnly && gltfFormats.Length > 0) {
       gltfModelExporter.UvIndices = false;
       gltfModelExporter.Embedded = false;
 
@@ -128,7 +131,37 @@ public sealed class AssimpIndirectModelExporter : IModelExporter {
       }
     }
 
-    if (!this.LowLevel && nonGltfFormats.Length > 0) {
+    var blenderFbxFormats = !this.LowLevel
+        ? nonGltfFormats
+              .Where(format => format.FileExtension.Equals("fbx",
+                                                           StringComparison.OrdinalIgnoreCase))
+              .ToArray()
+        : Array.Empty<ExportFormatDescription>();
+    var assimpFormats = nonGltfFormats
+                        .Where(format => !format.FileExtension.Equals("fbx",
+                                                                      StringComparison.OrdinalIgnoreCase) ||
+                                         !BlenderHeadlessFbxExporter.IsConfigured())
+                        .ToArray();
+
+    if (blenderFbxFormats.Length > 0 &&
+        BlenderHeadlessFbxExporter.IsConfigured()) {
+      foreach (var blenderFbxFormat in blenderFbxFormats) {
+        BlenderHeadlessFbxExporter.ExportFbx(
+            new ModelExporterParams {
+                OutputFile = outputFile.CloneWithFileType(
+                    $".{blenderFbxFormat.FileExtension}"),
+                Model = model,
+                Scale = scale,
+            },
+            this.AnimationOnly);
+
+        if (this.ForceGarbageCollection) {
+          GcUtil.ForceCollectEverything();
+        }
+      }
+    }
+
+    if (!this.LowLevel && assimpFormats.Length > 0) {
       gltfModelExporter.UvIndices = true;
       gltfModelExporter.Embedded = true;
 
@@ -152,17 +185,16 @@ public sealed class AssimpIndirectModelExporter : IModelExporter {
       // "Automatic Bone Orientation" if importing in Blender.
 
       AssimpIndirectAnimationFixer.Fix(model, assScene);
-      AssimpIndirectUvFixer.Fix(model, assScene);
-      AssimpIndirectTextureFixer.Fix(model, assScene);
+      if (!this.AnimationOnly) {
+        AssimpIndirectUvFixer.Fix(model, assScene);
+        AssimpIndirectTextureFixer.Fix(model, assScene);
+      }
 
-      foreach (var nonGltfFormat in nonGltfFormats) {
-        var nonGltfOutputFile =
-            outputFile.CloneWithFileType($".{nonGltfFormat.FileExtension}");
+      foreach (var assimpFormat in assimpFormats) {
+        var assimpOutputFile =
+            outputFile.CloneWithFileType($".{assimpFormat.FileExtension}");
 
-        var outputPath = nonGltfOutputFile.FullPath;
-        var outputExtension = nonGltfOutputFile.FileType;
-
-        var supportedExportFormats = ctx.GetSupportedExportFormats();
+        var outputPath = assimpOutputFile.FullPath;
 
         // TODO: Are these all safe to include?
         var preProcessing =
@@ -173,7 +205,7 @@ public sealed class AssimpIndirectModelExporter : IModelExporter {
         var success =
             ctx.ExportFile(assScene,
                            outputPath,
-                           nonGltfFormat.FormatId,
+                           assimpFormat.FormatId,
                            preProcessing);
         Asserts.True(success, "Failed to export model.");
 
